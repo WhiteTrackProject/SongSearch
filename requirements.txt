@@ -1,0 +1,2 @@
+PyQt5>=5.15.4  # Framework para la interfaz gráfica
+rapidfuzz>=2.13.0  # Biblioteca para comparar similitudes de texto
