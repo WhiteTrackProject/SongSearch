@@ -2,8 +2,9 @@ import os
 from PyQt5.QtWidgets import (
     QMainWindow, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QLineEdit, QPushButton, QSlider, QRadioButton,
-    QButtonGroup, QListWidget, QTextEdit, QWidget, QFileDialog, QCheckBox
+    QButtonGroup, QListWidget, QTextEdit, QWidget, QFileDialog, QCheckBox, QListWidgetItem
 )
+from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
 
 class SongSearchApp(QMainWindow):
@@ -137,55 +138,60 @@ class SongSearchApp(QMainWindow):
             self.log_box.setFixedHeight(50)
             self.expand_log_button.setText("+")
 
-def perform_search(self):
-    """Realiza la búsqueda de archivos según los parámetros."""
-    try:
+    def perform_search(self):
+        """Realiza la búsqueda de archivos según los parámetros."""
+        try:
         if not self.selected_folder:
-            self.log_box.append("Por favor, selecciona una carpeta antes de buscar.")
-            return
+            folder = QFileDialog.getExistingDirectory(self, "Seleccionar Carpeta para la Búsqueda")
+            if folder:
+                self.selected_folder = folder
+                self.log_box.append(f"Carpeta seleccionada automáticamente: {folder}")
+            else:
+                self.log_box.append("No se seleccionó ninguna carpeta. La búsqueda no puede continuar.")
+                return  # Salir de la función si no se seleccionó carpeta
 
-        # Obtener los parámetros
-        selected_formats = [ext for ext, checkbox in self.file_type_checkboxes.items() if checkbox.isChecked()]
-        search_intensity = self.quality_slider.value()
-        search_type = "Artista" if self.artist_radio.isChecked() else "Canción"
+            # Obtener los parámetros
+            selected_formats = [ext for ext, checkbox in self.file_type_checkboxes.items() if checkbox.isChecked()]
+            search_intensity = self.quality_slider.value()
+            search_type = "Artista" if self.artist_radio.isChecked() else "Canción"
 
-        # Leer las canciones proporcionadas en el cuadro izquierdo
-        input_songs = self.input_text.toPlainText().strip().split("\n")
-        input_songs = [song.strip().lower() for song in input_songs if song.strip()]  # Limpiar entradas
+            # Leer las canciones proporcionadas en el cuadro izquierdo
+            input_songs = self.input_text.toPlainText().strip().split("\n")
+            input_songs = [song.strip().lower() for song in input_songs if song.strip()]  # Limpiar entradas
 
-        if not input_songs:
-            self.log_box.append("Por favor, introduce canciones o artistas en el cuadro izquierdo.")
-            return
+            if not input_songs:
+                self.log_box.append("Por favor, introduce canciones o artistas en el cuadro izquierdo.")
+                return
 
-        # Mostrar los parámetros en el log
-        self.log_box.append(f"Iniciando búsqueda con: formatos {selected_formats}, intensidad {search_intensity}%, tipo {search_type}")
-        self.log_box.append(f"Canciones o artistas a buscar: {input_songs}")
+            # Mostrar los parámetros en el log
+            self.log_box.append(f"Iniciando búsqueda con: formatos {selected_formats}, intensidad {search_intensity}%, tipo {search_type}")
+            self.log_box.append(f"Canciones o artistas a buscar: {input_songs}")
 
-        # Limpiar la lista de resultados
-        self.results_list.clear()
+            # Limpiar la lista de resultados
+            self.results_list.clear()
 
-        # Realizar la búsqueda
-        found_songs = set()
-        for root, _, files in os.walk(self.selected_folder):
-            for file in files:
-                file_ext = os.path.splitext(file)[-1].lower()
-                if file_ext in selected_formats:
-                    # Comparar con los nombres introducidos
-                    file_name = os.path.splitext(file)[0].lower()
-                    for song in input_songs:
-                        if song in file_name:  # Coincidencia básica
-                            found_songs.add(song)
-                            self.add_result(file_name, "found", os.path.join(root, file))
-                            break
+            # Realizar la búsqueda
+            found_songs = set()
+            for root, _, files in os.walk(self.selected_folder):
+                for file in files:
+                    file_ext = os.path.splitext(file)[-1].lower()
+                    if file_ext in selected_formats:
+                        # Comparar con los nombres introducidos
+                        file_name = os.path.splitext(file)[0].lower()
+                        for song in input_songs:
+                            if song in file_name:  # Coincidencia básica
+                                found_songs.add(song)
+                                self.add_result(file_name, "found", os.path.join(root, file))
+                                break
 
-        # Identificar los no encontrados
-        for song in input_songs:
-            if song not in found_songs:
-                self.add_result(song, "not_found")
+            # Identificar los no encontrados
+            for song in input_songs:
+                if song not in found_songs:
+                    self.add_result(song, "not_found")
 
-        self.log_box.append("Búsqueda completada.")
-    except Exception as e:
-        self.log_box.append(f"Error durante la búsqueda: {str(e)}")
+            self.log_box.append("Búsqueda completada.")
+        except Exception as e:
+            self.log_box.append(f"Error durante la búsqueda: {str(e)}")
 
     def add_result(self, name, status, path=None):
         """
@@ -202,5 +208,3 @@ def perform_search(self):
             item.setForeground(QColor("red"))
             item.setToolTip("No encontrado.")
         self.results_list.addItem(item)
-
-
